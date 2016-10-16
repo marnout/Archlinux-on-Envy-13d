@@ -1,0 +1,65 @@
+Installer Arch Linux sur un HP Envy 13d pose deux difficultés :
+- La très haute résolusion de l'écran le rend illisible. Il faudrait une police de taille 24 au moins, voire 28.
+- La saleté de carte wifi Broadcom BCM43142 n'est pas reconnue par l'iso standard de Arch Linux.
+
+La solution proposée ici consiste à recréer une image d'Arch Linux au moyen de archiso.
+
+Pour recréer sa propre image iso, l'article du wiki wiki.archlinux.fr/Archiso est très bien documenté.
+
+Il est conseillé de tout faire en root, sauf exceptions.
+
+Préparation
+===========
+
+1. Installer archiso : # pacman -S archiso
+
+2. Créer un repertoire, envy par exemple et y copier les fichiers releng :
+	$ mkdir ~/envy
+	$ cd envy
+	# cp -r /usr/sahre/archiso/configs/releng .
+
+Remarque : on va travailler à partir du dossier ~/envy
+
+Polices plus grandes
+====================
+
+3. Si nécessaire installer les polices terminus
+	# pacman -Ss terminus-font
+
+4. Ajouter le dossier usr/share/kbd/consolefonts à releng/
+	# mkdir -p releng/airootfs/usr/share/kbd/consolefonts
+	# cp /usr/share/kbd/consolefonts/ter-v{24b,24n,28b,28n,32n}.psf.gz airootfs/usr/share/kbd/consolefonts/
+
+5. Configurer la police de l'iso.
+	 # echo "FONT=ter-v28n" > airootfs/etc/vconsole.conf
+	
+Pilote de la BMC43142 de merde
+==============================
+Voir : https://wiki.archlinux.org/index.php/Archiso#Custom_local_repository
+
+6. Télécharger le pilote broadcom-wl depuis aur et créér le paquet
+	# git clone https://aur.archlinux.org/broadcom-wl.git
+	# cd broadcom-wl
+	$ makepkg -s /* en simple utilisateur */
+
+7. Ajouter un dépôt local
+	# mkdir /opt/repo
+	# sudo repo-add /opt/repo/broadcom-wl.db.tar.gz broadcom-wl/broadcom-wl-6.30.223.271-4-x86_64.pkg.tar.xz
+	On devrait obtenir ceci dans /opt/repo :
+		broadcom-wl.db
+		broadcom-wl.db.tar.gz
+		broadcom-wl.files
+		broadcom-wl.files.tar.gz
+
+8. Ajouter les lignes suivantes au fichier pacman.conf
+	[custom]
+	SigLevel = Optional TrustAll
+	Server = file:///opt/repo
+
+9. Ajouter le paquet broadcom de merde à package.x86_64
+	# echo "broadcom-wl" >> releng/package.x86_64
+
+10. Croiser les doigts et lancer :
+	# releng/build.sh
+
+

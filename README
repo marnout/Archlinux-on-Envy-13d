@@ -1,0 +1,62 @@
+Installing Arch Linux on an HP Envy 13d faces two challenges:
+- High résolusion display makes console font unreadable.
+- Wifi Broadcom BCM43142 card is not recognized by standard Arch Linux iso.
+
+The solution proposed here is to build a specific iso 
+
+Documentation :  wiki.archlinux.org/archiso.
+
+It is recommended to act always as root, except when it is not allowed.
+
+Preparation
+===========
+1. Install archiso: 
+	# pacman -S archiso
+
+2. Create a work directory, for example ~/envy and copy files releng:
+	$ mkdir ~/envy
+	$ cd envy
+	# cp -r /usr/sahre/archiso/configs/releng .
+
+Note: we will work from the folderi : ~/envy
+
+Larger fonts
+============
+3. If necessary install the fonts terminus
+	# pacman -Ss terminus-font
+
+4. Add usr/share/kbd/consolefonts to releng/
+	# mkdir -p releng/airootfs/usr/share/kbd/consolefonts
+	# cp /usr/share/kbd/consolefonts/ter-v{24b,24n,28b,28n,32n}.psf.gz airootfs/usr/share/kbd/consolefonts/
+
+5. Configure iso police.
+	# echo "FONT=ter-v28n" > airootfs/etc/vconsole.conf
+
+Driver BMC43142
+===============
+See: https://wiki.archlinux.org/index.php/Archiso#Custom_local_repository
+
+6. Download the broadcom-wl driver from aur and create the package
+	# git clone https://aur.archlinux.org/broadcom-wl.git
+	# cd broadcom-wl
+	$ makepkg -s /* Single user */
+
+7. Add a local repository
+	# mkdir /opt/repo
+	# add-repo /opt/repo/broadcom-wl.db.tar.gz broadcom-wl/broadcom-wl-6.30.223.271-4-x86_64.pkg.tar.xz
+We should get this in/opt/repo:
+	Broadcom-wl.db
+	Broadcom-wl.db.tar.gz
+	Broadcom-wl.files
+	Broadcom-wl.files.tar.gz
+
+8. Add the following lines to file pacman.conf
+	[Custom]
+	SigLevel = Optional TrustAll
+	Server = file:///opt/repo
+
+9. Add the Broadcom package to package.x86_64
+	# echo "broadcom-wl" >> releng/package.x86_64
+
+10. Cross your fingers and run:
+	# releng/build.sh
